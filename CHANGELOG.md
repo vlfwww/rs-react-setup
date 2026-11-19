@@ -246,7 +246,7 @@
 
 - **Did:** Chose to let the user select a city from geocoding matches before requesting its forecast; implementation followed in the next step.
 - **Options considered:** Automatically use the first geocoding result or show matches and request weather after selection. Weighed ambiguous city names, number of actions, and user control. Reading: `docs/TASK.md` → Features 3 and 6.
-- **Decision & justification:** «Выбор из вариантов геокодинга даёт пользователю точный контроль при неоднозначных названиях городов ценой всего одного клика до загрузки погоды».
+- **Decision & justification:** “Choosing from geocoding results gives users precise control when city names are ambiguous, with just one click before the weather loads.”
 - **Concepts explained:** Geocoding resolves a city query into candidate locations; a forecast request needs the chosen location's coordinates.
 - **TODO:** Implement the explicit city-selection flow.
 
@@ -262,7 +262,7 @@
 
 - **Did:** Chose an integration test for the selection-to-forecast user flow; implementation followed in the next step.
 - **Options considered:** Test the candidate callback alone or test selection through request and rendered forecast with the network mocked. Weighed component-boundary behavior, full user flow, and network isolation. Reading: `docs/README.md` → Vitest and React Testing Library.
-- **Decision & justification:** «проверяет реальную связку клика, эффекта запроса, рендера и ошибки на уровне пользовательского потока, изолируя сеть без мокирования внутренних функций компонента».
+- **Decision & justification:** “It verifies the real user flow from click through effect-driven request to rendered result or error, while isolating the network without mocking internal component functions.”
 - **Concepts explained:** Mocking the network allows assertions on the user-visible flow without relying on real requests or internal component functions.
 - **TODO:** Verify choosing among multiple city matches and the selected units in the integration test.
 
@@ -292,3 +292,37 @@
 - **Concepts explained:** The search captures its units at submission; later changes do not retroactively alter that request.
 - **TODO:** None for this test scenario.
 - **Validation:** App integration tests passed (5/5); targeted Oxlint and Oxfmt checks passed.
+
+## 2026-11-19 — Choosing saved-location identity
+
+- **Did:** Chose the uniqueness key for saved locations; implementation has not started.
+- **Options considered:** Keep one entry per city and ignore repeats, keep one entry and update it, or treat a city-and-units pair as unique. Weighed per-entry units, duplicate cards, and independent refetch behavior. Reading: `docs/TASK.md` → Feature 4.
+- **Decision & justification:** “Because units are set per entry, this lets us store the same city in both metric and imperial and refetch each card independently.”
+- **Concepts explained:** The saved-location identity key determines whether reducer add/refetch operations address one or several entries for the same city.
+- **TODO:** Decide how cached `weather.tempC` stays Celsius when the current result was fetched in imperial units, then integrate the saved list and persistence.
+
+## 2026-11-19 — Choosing cached weather units
+
+- **Did:** Chose how saved weather remains consistent with the fixed `weather.tempC` field; implementation has not started.
+- **Options considered:** Request each saved forecast in its selected units and normalize to Celsius at the cache boundary, or always request metric for saved forecasts and use each entry's units for display. Weighed the `tempC` contract, request-unit behavior, and display consistency. Reading: `docs/TASK.md` → Feature 4 and `src/api/openMeteo.ts` → `CurrentWeatherData`.
+- **Decision & justification:** “We preserve the exact meaning of tempC, verify that the request uses the selected units, and display the temperature in the card's expected units.”
+- **Concepts explained:** A fixed Celsius cache field must not contain a Fahrenheit value; the view can still present the saved location's selected units.
+- **TODO:** Integrate the saved-location reducer and persistence, then add/render/remove/refetch saved entries and cover the flow with MSW tests.
+
+## 2026-11-19 — Reviewing saved-state persistence integration
+
+- **Did:** Connected reducer state to the `useLocalStorage` hook and added App tests for restoring a saved entry, persisting an added location, and surfacing a storage write error.
+- **Options considered:** Continued with the previously selected reducer as the state owner and `useLocalStorage` as the persistence boundary.
+- **Decision & justification:** No new design decision; the previously selected reducer and hook responsibilities remain unchanged.
+- **Concepts explained:** A storage write effect can persist reducer updates, while read and write failures need separate verification.
+- **TODO:** Test a `getItem` failure while `setItem` remains available, and ensure the read error stays visible after the initial fallback state is persisted.
+- **Validation:** App tests passed (8/8); targeted Oxlint and Oxfmt checks passed; `pnpm build` passed.
+
+## 2026-11-19 — Verifying storage read-error persistence
+
+- **Did:** Added an App test where `getItem` fails while `setItem` succeeds, and verified the storage error remains visible after the fallback state is written.
+- **Options considered:** No new design choice; verified the previously selected explicit storage-error reporting behavior.
+- **Decision & justification:** Unresolved (not the student's call) — this turn verified the existing behavior; no separate design choice was discussed.
+- **Concepts explained:** A successful fallback write must not erase the fact that the initial saved data could not be read.
+- **TODO:** Continue the saved-locations feature with per-item refetch and its effect cleanup tests.
+- **Validation:** App tests passed (9/9); targeted Oxlint and Oxfmt checks passed; `pnpm build` passed.

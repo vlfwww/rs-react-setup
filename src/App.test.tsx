@@ -2,11 +2,12 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 import { FORECAST_URL, GEOCODING_URL } from './api/consts';
 
 const server = setupServer();
+const STORAGE_KEY = 'weather-dashboard:saved-locations';
 
 const MINSK_CITY = {
   id: 625144,
@@ -41,6 +42,7 @@ beforeAll(() => {
 
 afterEach(() => {
   server.resetHandlers();
+  localStorage.clear();
 });
 
 afterAll(() => {
@@ -69,6 +71,32 @@ async function selectCityMatch(labelText: string) {
   await userEvent
     .setup()
     .click(within(item as HTMLElement).getByRole('button', { name: /select/iu }));
+}
+
+function makeStoredMinsk() {
+  return [
+    {
+      id: '625144:metric',
+      name: 'Minsk, Minsk City, Belarus',
+      latitude: 53.9,
+      longitude: 27.56667,
+      units: 'metric',
+      weather: { tempC: 14, code: 0, fetchedAt: 1700000000000 },
+      status: 'success',
+    },
+  ];
+}
+
+function expectStorageThrow(method: 'getItem' | 'setItem', message: string, pattern: RegExp) {
+  const spy = vi.spyOn(Storage.prototype, method).mockImplementation(() => {
+    throw new Error(message);
+  });
+  try {
+    render(<App />);
+    expect(screen.getByRole('alert')).toHaveTextContent(pattern);
+  } finally {
+    spy.mockRestore();
+  }
 }
 
 describe('App — city search flow', () => {
@@ -142,5 +170,33 @@ describe('App — non-first match and units', () => {
     expect(url.searchParams.get('latitude')).toBe(String(LYON_CITY.latitude));
     expect(url.searchParams.get('longitude')).toBe(String(LYON_CITY.longitude));
     expect(url.searchParams.get('temperature_unit')).toBe('fahrenheit');
+  });
+});
+
+describe('App — saved locations persistence', () => {
+  it('renders a saved location restored from localStorage on mount', () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(makeStoredMinsk()));
+    render(<App />);
+    const savedSection = screen.getByRole('region', { name: /saved locations/iu });
+    expect(within(savedSection).getByText('Minsk, Minsk City, Belarus')).toBeVisible();
+  });
+
+  it('persists added location to localStorage on state change', async () => {
+    server.use(
+      http.get(GEOCODING_URL, () => HttpResponse.json({ results: [MINSK_CITY] })),
+      http.get(FORECAST_URL, () => HttpResponse.json({ current: { temperature_2m: 14 } })),
+    );
+    await selectFirstMatchingCity('Minsk');
+    await userEvent.setup().click(await screen.findByRole('button', { name: /^add$/iu }));
+    const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]') as Array<{ id: string }>;
+    expect(parsed.some((entry) => entry.id === '625144:metric')).toBe(true);
+  });
+
+  it('displays storage error when localStorage setItem throws', () => {
+    expectStorageThrow('setItem', 'Quota exceeded', /quota exceeded|storage/iu);
+  });
+
+  it('keeps storage error visible when getItem fails while setItem succeeds', () => {
+    expectStorageThrow('getItem', 'Corrupted storage data', /corrupted storage data|storage/iu);
   });
 });
