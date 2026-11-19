@@ -56,4 +56,28 @@
 - **Options considered:** Open-Meteo, another key-free public API, or a small local mock. Compared support for city-name search, coordinates, current weather, and units. Reading: `docs/TASK.md` → What you'll build and FAQ.
 - **Decision & justification:** Use Open-Meteo because it supports city-name search, provides coordinates for saved locations, and returns current weather in the requested units.
 - **Concepts explained:** The task allows key-free public APIs or a local mock and does not require a backend.
-- **TODO:** Begin with the `SavedLocation` model and pure reducer, then test reducer transitions before wiring the UI.
+- **TODO:** Complete reducer transition tests before wiring the UI.
+
+## 2026-11-19 — Saved-locations model and reducer
+
+- **Did:** Added the `SavedLocation` and `SavedWeather` types, a pure reducer for collection and per-location fetch actions, and four reducer tests.
+- **Options considered:** `useState` or `useReducer` for collection updates and per-item lifecycle; the `useReducer` choice and justification are recorded above.
+- **Decision & justification:** Use the previously selected `useReducer` approach to centralize immutable list and status transitions.
+- **Concepts explained:** Reducers should return updated state without mutating prior state; per-item updates should leave other entries unchanged.
+- **TODO:** Add focused tests for `REMOVE` and successful `FETCH_SUCCESS`; prevent a superseded request from updating an existing location.
+
+## 2026-11-19 — Guarding stale same-location responses
+
+- **Did:** Chose where to reject results from superseded requests; no effect code changed.
+- **Options considered:** Check request cancellation in the effect before dispatch, or carry a request identifier/generation through reducer state and actions. Compared same-location race protection, effect complexity, and isolated reducer testability. Reading: `docs/hooks.md` → Basic Hooks (`useEffect`).
+- **Decision & justification:** Guard in the effect: `AbortController` stops the previous request and checking `!signal.aborted` prevents stale success or error dispatches, without adding request-only fields to `SavedLocation`.
+- **Concepts explained:** `AbortController` cancellation and a signal check can stop an obsolete effect from dispatching its result.
+- **TODO:** Verify both success and error paths check the abort signal before dispatch.
+
+## 2026-11-19 — Expanding reducer test coverage
+
+- **Did:** Added direct tests for removing a location without mutating prior state and for updating weather on successful fetch.
+- **Options considered:** Added focused tests for the two reducer actions not directly covered by the initial suite.
+- **Decision & justification:** No new design decision; the tests check the `REMOVE` and successful `FETCH_SUCCESS` transitions.
+- **Concepts explained:** Reducer tests can assert both the resulting state and that the input state remains unchanged.
+- **TODO:** Test cancellation guards at the effect layer when search and refetch effects are implemented.
