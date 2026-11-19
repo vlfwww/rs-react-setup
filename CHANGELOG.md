@@ -207,3 +207,88 @@
 - **Decision & justification:** No new design decision; the tests check the `REMOVE` and successful `FETCH_SUCCESS` transitions.
 - **Concepts explained:** Reducer tests can assert both the resulting state and that the input state remains unchanged.
 - **TODO:** Test cancellation guards at the effect layer when search and refetch effects are implemented.
+
+## 2026-11-19 — App search orchestration
+
+- **Did:** Connected SearchBar to the Open-Meteo city-search client through App and added an integration hook and results list.
+- **Options considered:** Keep orchestration in `useCitySearch` or move it into `App`; compared reuse, effect/state cohesion, and isolated testability. Reading: `docs/hooks.md` → Custom Hooks and Basic Hooks (`useEffect`).
+- **Decision & justification:** Move orchestration to `App` because the search logic is not reused.
+- **Concepts explained:** The submit handler records a search intent; the effect performs the request and owns cleanup.
+- **TODO:** Move search orchestration into `App` and verify the search error announcement.
+
+## 2026-11-19 — Moving search orchestration to App
+
+- **Did:** Moved city-search state and request orchestration into `App`; the pending query is handled by a `useEffect` with `AbortController` cleanup and stale-result protection.
+- **Options considered:** Keep search orchestration in `useCitySearch` or move it into `App`; compared reuse, effect/state cohesion, and isolated testability. Reading: `docs/hooks.md` → Custom Hooks and Basic Hooks (`useEffect`).
+- **Decision & justification:** Move orchestration to `App` because the search logic is not reused.
+- **Concepts explained:** Effects own request execution and cleanup; event handlers record the user's search intent.
+- **TODO:** Align the App error assertion with the chosen results announcement semantics.
+- **Validation:** App integration tests passed (2/2) and build passed; lint and formatting findings remained.
+
+## 2026-11-19 — Search error announcement
+
+- **Did:** Chose the accessibility behavior for city-search failures; no code changed.
+- **Options considered:** Render the message as an `output` within results or as an assertive `alert`; compared contextual announcement with interruption. Reading: `docs/TASK.md` → Feature 3 and `docs/README.md` → React Testing Library.
+- **Decision & justification:** Keep the `output` announcement so users hear a clear search failure in the results area without interrupting their current context, and can retry.
+- **Concepts explained:** Tests should assert the chosen user-facing accessible output.
+- **TODO:** Update the App error test to assert the `output` message.
+
+## 2026-11-19 — Verifying App search error output
+
+- **Did:** Updated the error-flow test to assert the visible search error message rendered in the results area.
+- **Options considered:** Keep the error as an `output` within results or announce it as an assertive `alert`; compared contextual announcement with interruption. Reading: `docs/TASK.md` → Feature 3 and `docs/README.md` → React Testing Library.
+- **Decision & justification:** Keep the `output` so users can understand and retry the search without interrupting their current context.
+- **Concepts explained:** Tests should assert the selected accessible output and its user-visible text.
+- **TODO:** Continue implementing the selected-city forecast flow.
+- **Validation:** App tests passed (2/2); lint and formatting checks passed for the App test at that point.
+
+## 2026-11-19 — Choosing a city before weather lookup
+
+- **Did:** Chose to let the user select a city from geocoding matches before requesting its forecast; implementation followed in the next step.
+- **Options considered:** Automatically use the first geocoding result or show matches and request weather after selection. Weighed ambiguous city names, number of actions, and user control. Reading: `docs/TASK.md` → Features 3 and 6.
+- **Decision & justification:** «Выбор из вариантов геокодинга даёт пользователю точный контроль при неоднозначных названиях городов ценой всего одного клика до загрузки погоды».
+- **Concepts explained:** Geocoding resolves a city query into candidate locations; a forecast request needs the chosen location's coordinates.
+- **TODO:** Implement the explicit city-selection flow.
+
+## 2026-11-19 — Planning the selected-city forecast flow
+
+- **Did:** Planned the data flow from selecting a geocoding match to displaying its forecast; implementation followed in the next step.
+- **Options considered:** Use the previously chosen explicit city selection and continue the existing App-level `useEffect` request orchestration with cancellation. Reading: `docs/TASK.md` → Features 3 and 6; `docs/hooks.md` → Basic Hooks (`useEffect`).
+- **Decision & justification:** Pass the selected match's identifying details and coordinates with the current units to App; let its effect request the forecast and cancel/ignore stale work when selection changes or the component unmounts.
+- **Concepts explained:** The forecast is tied to a location's coordinates and the selected units; effect cleanup prevents obsolete requests from winning.
+- **TODO:** Implement the candidate-selection callback and connect it to forecast states.
+
+## 2026-11-19 — Testing city selection and forecast
+
+- **Did:** Chose an integration test for the selection-to-forecast user flow; implementation followed in the next step.
+- **Options considered:** Test the candidate callback alone or test selection through request and rendered forecast with the network mocked. Weighed component-boundary behavior, full user flow, and network isolation. Reading: `docs/README.md` → Vitest and React Testing Library.
+- **Decision & justification:** «проверяет реальную связку клика, эффекта запроса, рендера и ошибки на уровне пользовательского потока, изолируя сеть без мокирования внутренних функций компонента».
+- **Concepts explained:** Mocking the network allows assertions on the user-visible flow without relying on real requests or internal component functions.
+- **TODO:** Verify choosing among multiple city matches and the selected units in the integration test.
+
+## 2026-11-19 — Implementing selected-city weather lookup
+
+- **Did:** Added candidate selection, an App-level forecast effect with abort/stale-result guards, and current-weather loading, success, and error UI.
+- **Options considered:** Follow the previously selected explicit city choice, App-level orchestration, effect-based requests with cleanup, and MSW integration testing.
+- **Decision & justification:** The selected city's coordinates and search units drive the forecast request; effect cleanup cancels work when the selected request changes or the app unmounts.
+- **Concepts explained:** Geocoding candidates are distinct locations; loading state is derived from the selected request until its matching result settles.
+- **TODO:** Add an integration scenario with multiple matches, select a non-first result, and assert its coordinates and units are used.
+- **Validation:** App integration tests passed (4/4); targeted Oxlint and Oxfmt checks passed; `pnpm build` passed.
+
+## 2026-11-19 — Verifying non-first city selection
+
+- **Did:** Added an integration scenario with multiple geocoding matches and selected the non-first city; its forecast coordinates are asserted.
+- **Options considered:** Extended the existing MSW user-flow test rather than mocking internal component functions.
+- **Decision & justification:** Keep testing the visible selection-to-forecast flow because it verifies the chosen city is the one requested.
+- **Concepts explained:** The units are captured when the search is submitted, so changing the selector after submission does not alter the already displayed results' units.
+- **TODO:** Set imperial before submitting the query and assert the exact Fahrenheit request parameter and visible unit; the current truthy check does not distinguish Celsius from Fahrenheit.
+- **Validation:** App integration tests passed (5/5); targeted Oxlint and Oxfmt checks passed.
+
+## 2026-11-19 — Verifying imperial forecast units
+
+- **Did:** Updated the multi-candidate integration test to choose imperial before submitting the search and assert the Fahrenheit request parameter and displayed unit.
+- **Options considered:** Kept the units assertion in the existing end-to-end city-selection scenario.
+- **Decision & justification:** The same user flow now verifies both that the non-first city is selected and that the units chosen at submission reach the forecast request.
+- **Concepts explained:** The search captures its units at submission; later changes do not retroactively alter that request.
+- **TODO:** None for this test scenario.
+- **Validation:** App integration tests passed (5/5); targeted Oxlint and Oxfmt checks passed.
