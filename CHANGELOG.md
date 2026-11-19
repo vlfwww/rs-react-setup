@@ -82,6 +82,41 @@
 - **Concepts explained:** Reducer tests can assert both the resulting state and that the input state remains unchanged.
 - **TODO:** Test cancellation guards at the effect layer when search and refetch effects are implemented.
 
+## 2026-11-19 — Completing SearchBar behavior tests
+
+- **Did:** Added a controlled `SearchBar` with unit selection and callback-based submission; updated its tests to use `userEvent` and narrower accessible-role queries.
+- **Options considered:** Build a standalone SearchBar or first connect saved-location state to `App`; compared dependencies, isolated testability, and visible progress.
+- **Decision & justification:** Start with SearchBar because it does not depend on app-level state or persistence and is independently testable.
+- **Concepts explained:** Role-based queries target the intended accessible control; `userEvent` models user interactions more closely than low-level event dispatch.
+- **TODO:** Connect SearchBar to app-level search state and the weather client.
+- **Validation:** Full suite passed (24/24), build passed, SearchBar lint and formatting checks passed.
+
+## 2026-11-19 — Verifying SearchBar tests
+
+- **Did:** The student narrowed the city-field query and grouped the SearchBar tests into city submission and unit-selection scenarios.
+- **Options considered:** A standalone SearchBar or first wiring saved-location state; the chosen SearchBar-first option and rationale are recorded in the student's prior decision.
+- **Decision & justification:** Continue with the SearchBar slice because it is independent of app state and persistence and can be tested on its own.
+- **Concepts explained:** A role-and-exact-name query avoids ambiguity when both a form and its input contain similar accessible names.
+- **TODO:** Use the planned `userEvent` interactions, format `SearchBar.tsx`, and reduce its remaining function-length warning.
+- **Validation:** SearchBar tests passed (4/4). Oxlint reports a component function-length warning; Oxfmt check fails for `SearchBar.tsx`.
+
+## 2026-11-19 — Implementing SearchBar
+
+- **Did:** The student added a controlled city-search form with unit selection and four behavior tests.
+- **Options considered:** Build a standalone SearchBar or first connect the saved-location reducer and persistence hook to `App`. Compared dependencies, isolated testability, and visible progress.
+- **Decision & justification:** Start with SearchBar because it does not depend on app-level state or persistence and is independently testable.
+- **Concepts explained:** The input label and the form's accessible name both contain “City”, so a partial label query can match both elements.
+- **TODO:** Narrow the ambiguous test selector; align interactions with the chosen RTL/userEvent testing strategy; resolve formatting and lint warnings.
+- **Validation:** All four tests currently fail because `getByLabelText(/city/i)` matches both the input label and form name. Oxlint reports test/component warnings; Oxfmt check fails.
+
+## 2026-11-19 — Starting the SearchBar slice
+
+- **Did:** Chose the next implementation slice; no UI code changed.
+- **Options considered:** Implement a standalone controlled `SearchBar` with unit selection and submit behavior, or connect the saved-location reducer and persistence hook in `App`. Compared dependencies, isolated testability, and visible progress. Reading: `docs/TASK.md` → Feature 2; `docs/hooks.md` → `useState`.
+- **Decision & justification:** Start with `SearchBar` because it does not depend on app-level state or persistence, gives a visible interactive element, and can be tested independently.
+- **Concepts explained:** A controlled input keeps its displayed value synchronized with React state; a submit callback lets the parent own search orchestration.
+- **TODO:** Implement `SearchBar` and behavior-focused tests for input, units selection, and form submission.
+
 ## 2026-11-19 — Verifying persistence and weather client
 
 - **Did:** Confirmed the `useLocalStorage` hook and Open-Meteo client/test slices are present.
