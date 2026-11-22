@@ -412,3 +412,12 @@
 - **Concepts explained:** Celsius remains the cache format, while each location's unit controls presentation.
 - **TODO:** Continue with the remaining Error Boundary, Husky pre-commit hook, and repository technical-requirement checks.
 - **Validation:** All 42 tests passed; statements 95.23%, branches 88.02%, functions 95.65%, lines 95.80%; Oxlint, Oxfmt, and the production build passed.
+
+## 2026-11-22 — Implementing and verifying the Error Boundary
+
+- **Did:** Added a class-based `ErrorBoundary` with fallback UI, error logging, retry recovery, and reset-key support; integrated it around the dashboard main area and added a test trigger in the header.
+- **Options considered:** Kept the boundary around the dashboard main area so the header and trigger remain accessible, while network errors continue to render beside their affected result.
+- **Decision & justification:** The boundary handles render failures, and the application fallback is recoverable: `Try again` resets the crash flag and restores the dashboard main area.
+- **Concepts explained:** `getDerivedStateFromError` sets the fallback state, `componentDidCatch` logs render failures, and a reset callback restores child state; Error Boundaries do not replace network error handling.
+- **TODO:** Restore the coaching-harness assets and Husky hooks, then resolve the repository technical-requirement checks.
+- **Validation:** Added unit and App-level integration tests; all 44 tests passed, coverage remained above thresholds (94.63% statements, 86.81% branches, 95.14% functions, 95.45% lines), and `pnpm lint`, `pnpm format`, and `pnpm build` passed.
