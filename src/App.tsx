@@ -45,6 +45,7 @@ interface DashboardContentProps {
   onSelectCity: (city: GeocodingResult, units: WeatherUnits) => void;
   onAddCurrent: () => void;
   onRemoveLocation: (id: string) => void;
+  onRefetchLocation: (id: string) => void;
 }
 
 function DashboardContent({
@@ -56,6 +57,7 @@ function DashboardContent({
   onSelectCity,
   onAddCurrent,
   onRemoveLocation,
+  onRefetchLocation,
 }: DashboardContentProps) {
   return (
     <main>
@@ -78,7 +80,11 @@ function DashboardContent({
       </section>
       <section aria-label="Saved locations">
         <h2>Saved locations</h2>
-        <SavedLocationsList locations={locations} onRemove={onRemoveLocation} />
+        <SavedLocationsList
+          locations={locations}
+          onRemove={onRemoveLocation}
+          onRefetch={onRefetchLocation}
+        />
       </section>
     </main>
   );
@@ -98,6 +104,7 @@ export function App({ weatherClient }: AppProps) {
       onSelectCity={state.handleSelectCity}
       onAddCurrent={state.handleAddCurrent}
       onRemoveLocation={state.handleRemoveLocation}
+      onRefetchLocation={state.handleRefetchLocation}
     />
   );
 }

@@ -326,3 +326,89 @@
 - **Concepts explained:** A successful fallback write must not erase the fact that the initial saved data could not be read.
 - **TODO:** Continue the saved-locations feature with per-item refetch and its effect cleanup tests.
 - **Validation:** App tests passed (9/9); targeted Oxlint and Oxfmt checks passed; `pnpm build` passed.
+
+## 2026-11-21 — Saved-location refetch effect placement
+
+- **Did:** Chose where the per-location refetch effect will be orchestrated; no application code changed.
+- **Options considered:** Centralize the request effect in the dashboard hook, triggered by a refetch intent, or place it in a custom hook for each list item. Compared reducer state consistency, separation of presentation and network work, and cancellation of stale requests. Reading: `docs/TASK.md` → Features 4 and 6; `docs/hooks.md` → Basic Hooks (`useEffect`) and Custom Hooks.
+- **Decision & justification:** Centralized useEffect в dashboard hook по намерению обновить конкретный id держит единый источник истины в savedLocationsReducer для переходов idle - loading - success/error, оставляя список презентационным и вынося сеть с AbortController в слой хука. При этом хук на элемент списка легко смешивает жизненный цикл карточки с запросами и усложняет координацию отмены устаревших ответов при повторном Refetch, удалении локации или размонтировании.
+- **Concepts explained:** The effect's placement is separate from the reducer's ownership of item status transitions; cleanup must cover superseded requests, removed locations, and unmounting.
+- **TODO:** Implement the refetch intent and per-item effect lifecycle, then add MSW tests.
+
+## 2026-11-21 — Planning per-location refetch lifecycle
+
+- **Did:** Sketched the click-to-effect flow and chose the stale-response guard; no application code changed.
+- **Options considered:** Use `AbortController` and check cancellation before dispatch, or add a per-request token as an additional guard. Compared repeat-refetch behavior, protection against late results, and the extra state and test complexity. Reading: `docs/hooks.md` → Basic Hooks (`useEffect`).
+- **Decision & justification:** Оставить AbortController и проверку отмены: cleanup эффекта вызывает controller.abort() и выставляет флаг отмены, а перед dispatch проверяется отмена (!cancelled && !signal.aborted), без лишнего состояния и усложнения тестов.
+- **Concepts explained:** Cleanup and the pre-dispatch cancellation guard prevent superseded requests from updating reducer state.
+- **TODO:** Add the refetch callback/button, then connect it to reducer transitions and the effect; cover success, failure, repeated refetch, removal, and cleanup with tests.
+
+## 2026-11-21 — Adding the saved-location refetch trigger
+
+- **Did:** Added an `onRefetch(id)` callback and button to the saved-locations list, plus a focused test that verifies the clicked location id. Parent integration is not complete.
+- **Options considered:** No new design decision; this follows the previously logged centralized dashboard-effect approach.
+- **Decision & justification:** Existing choices remain unchanged; the component test checks that the correct saved entry is identified by the user's action.
+- **Concepts explained:** The UI test verifies the callback's observable behavior without coupling to the eventual fetch implementation.
+- **TODO:** Connect `onRefetch` through `App` and the dashboard hook; resolve duplicate section markup, preserve the displayed units, and address formatting/lint feedback.
+- **Validation:** The new component test passes (1/1). `pnpm build` fails because `App` does not yet pass `onRefetch`; `pnpm format` reports both changed files, and Oxlint warns that `SavedLocationsList` exceeds the function-length limit.
+
+## 2026-11-21 — Choosing saved-list markup ownership
+
+- **Did:** Chose which component owns the saved-locations section and heading; no application code changed.
+- **Options considered:** Keep the section and heading in `App` with `SavedLocationsList` rendering the list and empty state, or move them into `SavedLocationsList` and remove the parent wrapper. Compared page structure ownership with list-component responsibility.
+- **Decision & justification:** App отвечает за структуру страницы и секцию сохранённых локаций, тогда как SavedLocationsList отвечает только за рендер списка, пустого состояния и действий над карточкой.
+- **Concepts explained:** Keeping page-level structure in one place avoids nested duplicate landmarks and headings.
+- **TODO:** Apply this choice, restore the per-location units label, connect the refetch callback through `App`, then rerun the focused test, lint, formatting, and build.
+
+## 2026-11-21 — Checking saved-list callback wiring
+
+- **Did:** Removed the duplicate section wrapper, restored the units label, split the list item into its own component, and passed an `onRefetch` prop from `App`. The prop currently receives an empty callback, so refetch behavior is not connected.
+- **Options considered:** No new design decision; the page/list markup follows the previously recorded choice, while dashboard refetch orchestration remains pending.
+- **Decision & justification:** Existing choices remain unchanged; an empty callback satisfies the prop type but does not implement the user's refetch action.
+- **Concepts explained:** Type correctness alone does not ensure a callback has observable behavior.
+- **TODO:** Replace the empty callback with the dashboard-hook handler and test the integrated refetch flow; format `App.tsx` and `SavedLocationsList.test.tsx`.
+- **Validation:** Full tests passed (33/33), Oxlint passed, and the production build passed. Oxfmt reports formatting issues in `App.tsx` and `SavedLocationsList.test.tsx`.
+
+## 2026-11-21 — Wiring saved-location refetch
+
+- **Did:** Connected the list callback through `App` to the dashboard hook and added a centralized refetch effect that dispatches reducer lifecycle actions.
+- **Options considered:** No new design decision; followed the previously recorded centralized effect and cancellation choices.
+- **Decision & justification:** Existing choices remain unchanged; this is the first implementation of the per-location refetch flow.
+- **Concepts explained:** The effect now starts and settles a reducer-managed request, but the result mapping and cancellation behavior still need verification.
+- **TODO:** Map the typed weather response into the Celsius cache correctly; keep concurrent locations independent and cancel requests when their item is removed; add tests that exercise refetch success, failure, superseding requests, and removal.
+- **Validation:** All 33 current tests passed, Oxlint and Oxfmt passed, and the production build passed. Current tests do not exercise the refetch effect.
+
+## 2026-11-21 — Verifying saved-location refetch
+
+- **Did:** Corrected the saved-weather mapping, tracked active requests by location, added removal/unmount cleanup, and added App-level tests for success, failure, imperial conversion, concurrent requests, and removal.
+- **Options considered:** No new design decision; the implementation follows the previously logged centralized effect and per-location cancellation choices.
+- **Decision & justification:** Existing choices remain unchanged; the latest tests exercise the real user flow through MSW.
+- **Concepts explained:** Independent request controllers prevent refreshing one location from cancelling another; saved temperatures are normalized to Celsius before display conversion.
+- **TODO:** Add focused coverage for superseding a request for the same location and unmount cleanup; consider reusing the existing Fahrenheit conversion helper and making the active-map type explicit.
+- **Validation:** All 37 tests passed; Oxlint, Oxfmt, TypeScript, and the production build passed.
+
+## 2026-11-21 — Choosing repeated refetch behavior
+
+- **Did:** Chose the user-visible behavior for clicking Refetch again while that location is loading; no application code changed.
+- **Options considered:** Allow another click to cancel and replace the active request, or disable the button until the request settles. Compared recovery from a slow request, request cancellation, and how the behavior can be tested. Reading: `docs/TASK.md` → Features 4 and 6; `docs/hooks.md` → Basic Hooks (`useEffect`).
+- **Decision & justification:** пользователь может перезапустить зависший запрос без ожидания, старый запрос прерывается через AbortController без гонки данных, а тест честно проверяет замену активного запроса.
+- **Concepts explained:** A real replacement test must start the second request before settling the first and verify that the older result cannot win.
+- **TODO:** Keep Refetch available while loading and update the same-location test to assert abort and latest-result behavior.
+
+## 2026-11-21 — Replacing an in-flight refetch
+
+- **Did:** Kept the Refetch button enabled during loading and changed the same-location test to start a second request before resolving the first.
+- **Options considered:** Followed the previously logged choice to allow a repeat click and cancel the older request.
+- **Decision & justification:** Existing decision remains unchanged; the latest test now exercises an overlapping same-location refetch and checks that the older result does not replace the newer one.
+- **Concepts explained:** The saved cache stores Celsius, while the card should format that value in the location's selected units.
+- **TODO:** Restore unit-aware temperature display and the empty-list message; strengthen the replacement test by asserting the first request's abort signal.
+- **Validation:** All 39 tests passed; Oxlint, Oxfmt, TypeScript, and the production build passed.
+
+## 2026-11-22 — Finalizing saved-location refetch behavior
+
+- **Did:** Restored the unit-aware temperature formatter and empty-list message, and strengthened the same-location test to observe the first AbortSignal.
+- **Options considered:** Kept the previously selected repeat-refetch behavior and used the existing temperature helper for display.
+- **Decision & justification:** Existing choices remain unchanged; this verifies that the first request is aborted and the latest response is displayed.
+- **Concepts explained:** Celsius remains the cache format, while each location's unit controls presentation.
+- **TODO:** Continue with the remaining Error Boundary, Husky pre-commit hook, and repository technical-requirement checks.
+- **Validation:** All 42 tests passed; statements 95.23%, branches 88.02%, functions 95.65%, lines 95.80%; Oxlint, Oxfmt, and the production build passed.

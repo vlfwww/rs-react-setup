@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { CurrentWeatherData, GeocodingResult, WeatherUnits } from '../api/openMeteo';
 import type { WeatherDashboardClient } from '../App';
 import type { SearchBarSubmitParams } from '../components/SearchBar';
+import { type RefetchIntent, useRefetchLocationEffect } from './refetchLocation';
 import { usePersistedLocations, useSavedLocationsActions } from './savedLocationsState';
 
 export interface PendingQuery {
@@ -221,6 +222,28 @@ export function useWeatherDashboardState(client: WeatherDashboardClient) {
   const { locations, dispatchLocations, storageError } = usePersistedLocations();
   const { addLocation, removeLocation } = useSavedLocationsActions(locations, dispatchLocations);
   const flow = useSearchAndForecastState(client);
+  const [refetchIntent, setRefetchIntent] = useState<RefetchIntent | null>(null);
+
+  function handleRefetchLocation(locationId: string) {
+    const target = locations.find((entry) => entry.id === locationId);
+    if (!target) {
+      return;
+    }
+    setRefetchIntent((prev) => ({
+      locationId: target.id,
+      latitude: target.latitude,
+      longitude: target.longitude,
+      units: target.units,
+      seq: (prev?.seq ?? 0) + 1,
+    }));
+  }
+
+  useRefetchLocationEffect({
+    client,
+    intent: refetchIntent,
+    locations,
+    dispatchLocations,
+  });
 
   function handleAddCurrent() {
     if (flow.selectedForecast && flow.settledForecast?.weather) {
@@ -242,5 +265,6 @@ export function useWeatherDashboardState(client: WeatherDashboardClient) {
     handleSelectCity: flow.handleSelectCity,
     handleAddCurrent,
     handleRemoveLocation: removeLocation,
+    handleRefetchLocation,
   };
 }
