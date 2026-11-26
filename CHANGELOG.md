@@ -421,3 +421,33 @@
 - **Concepts explained:** `getDerivedStateFromError` sets the fallback state, `componentDidCatch` logs render failures, and a reset callback restores child state; Error Boundaries do not replace network error handling.
 - **TODO:** Restore the coaching-harness assets and Husky hooks, then resolve the repository technical-requirement checks.
 - **Validation:** Added unit and App-level integration tests; all 44 tests passed, coverage remained above thresholds (94.63% statements, 86.81% branches, 95.14% functions, 95.45% lines), and `pnpm lint`, `pnpm format`, and `pnpm build` passed.
+
+## 2026-11-22 — Choosing Husky hooks as the next setup step
+
+- **Did:** Added `.husky/pre-commit` to run harness verification, lint, and formatting checks, and `.husky/pre-push` to run harness verification and tests.
+- **Options considered:** Configure Husky hooks, restore missing coaching-harness assets, or address the first-commit history requirement. Compared readiness for the main push, the current verification blockers, and the risk of rewriting history. Reading: `README.md` → Quick start and Husky hooks.
+- **Decision & justification:** Configure Husky first because it is the most suitable step before the main push.
+- **Concepts explained:** Git's `core.hooksPath` points to Husky's generated hook runner; a failing command stops the hook, so later checks do not run.
+- **TODO:** Restore the assets required by `pnpm verify:harness`; until then both hooks intentionally block commits and pushes at that check.
+- **Validation:** `pnpm lint`, `pnpm format`, and `pnpm test` passed (44 tests). `pnpm verify:harness` fails because required harness files are missing.
+
+## 2026-11-22 — Choosing harness restoration as the next step
+
+- **Did:** Selected restoration of the files required by `pnpm verify:harness`; restoration has not started yet.
+- **Options considered:** Restore the missing harness files, or address the first-commit requirement by preserving the current history or considering a history rewrite. Compared the hooks' current blocking behavior and the risk of rewriting existing history. Reading: `scripts/verify-harness.mjs` for the expected file list.
+- **Decision & justification:** Restore the harness assets first because this is the only remaining setup stage; do not rewrite the initial commit, to avoid erasing existing history.
+- **Concepts explained:** History rewriting can replace existing commit ancestry; preserving the current branch leaves the first-commit requirement unmet but avoids that disruption.
+- **TODO:** Obtain canonical sources for missing harness configuration and skill files, or decide to recreate them as new setup; then rerun `pnpm verify:harness`.
+
+**2026-11-22 — Note:** The missing harness configuration and skill sources are absent from the current tree and the available `origin/main` and `origin/functional-components` trees. `scripts/sync-instructions.mjs` also requires the absent `.claude/skills` source directory, so exact restoration cannot be completed from the available repository contents.
+
+**2026-11-22 — Note:** Checked the live GitHub `main` after comparing it with its README: the README describes assistant, MCP, and coaching-skill assets, but the corresponding directories are absent there as well. This confirms a mismatch in the upstream starter template; there is no evidence that the student removed these files.
+
+## 2026-11-26 — Keeping imported files unchanged
+
+- **Did:** Added Oxfmt ignore patterns for the imported files and formatted the remaining checked files.
+- **Options considered:** Exclude imported files from the formatting check and format the remaining files, or keep the repository-wide check and wait for formatted files from the source repository. Considered preserving imported content versus enforcing formatting across all files. Reading: `package.json` and `.husky/pre-commit`.
+- **Decision & justification:** Exclude the imported files from formatting — “Сохранить импортированные файлы без изменений.”
+- **Concepts explained:** The pre-commit hook runs Oxfmt over the repository, so files outside `src/` still block the commit.
+- **TODO:** Review and stage the changes, then retry the commit.
+- **Validation:** `pnpm format`, `pnpm verify:harness`, and `pnpm lint` passed.

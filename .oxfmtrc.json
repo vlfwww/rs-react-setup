@@ -4,5 +4,19 @@
   "tabWidth": 2,
   "trailingComma": "all",
   "printWidth": 100,
-  "ignorePatterns": ["dist", "coverage", "node_modules", "scripts"]
+  "ignorePatterns": [
+    "dist",
+    "coverage",
+    "node_modules",
+    "scripts",
+    ".agents/**",
+    ".claude/**",
+    ".codex/**",
+    ".cursor/**",
+    ".github/copilot-instructions.md",
+    ".github/workflows/ci.yml",
+    ".husky/pre-commit",
+    ".husky/pre-push",
+    ".mcp.json"
+  ]
 }
