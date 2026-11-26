@@ -17,6 +17,7 @@ import {
   useWeatherDashboardState,
 } from './dashboard/dashboardHelpers';
 import type { SavedLocation } from './types/weather';
+import './App.css';
 
 export interface WeatherDashboardClient {
   searchCity: (
@@ -74,7 +75,7 @@ function DashboardMainArea({
   onRefetchLocation,
 }: DashboardMainAreaProps) {
   return (
-    <main>
+    <main className="dashboard-main">
       <CrashProbe shouldCrash={shouldCrash} />
       {Boolean(storageError) && (
         <output role="alert">
@@ -116,8 +117,8 @@ export function App({ weatherClient }: AppProps) {
   }, []);
 
   return (
-    <div>
-      <header>
+    <div className="dashboard-shell">
+      <header className="dashboard-header">
         <h1>Weather Dashboard</h1>
         <button type="button" onClick={() => setShouldCrash(true)}>
           Simulate error

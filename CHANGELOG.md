@@ -449,5 +449,22 @@
 - **Options considered:** Exclude imported files from the formatting check and format the remaining files, or keep the repository-wide check and wait for formatted files from the source repository. Considered preserving imported content versus enforcing formatting across all files. Reading: `package.json` and `.husky/pre-commit`.
 - **Decision & justification:** Exclude the imported files from formatting — “Сохранить импортированные файлы без изменений.”
 - **Concepts explained:** The pre-commit hook runs Oxfmt over the repository, so files outside `src/` still block the commit.
-- **TODO:** Review and stage the changes, then retry the commit.
+- **TODO:** None; the formatting fix was committed before the styling work began.
 - **Validation:** `pnpm format`, `pnpm verify:harness`, and `pnpm lint` passed.
+
+## 2026-11-26 — Choosing the dashboard visual direction
+
+- **Did:** Added a scoped stylesheet for a light card layout, responsive sections, readable controls, and visible keyboard focus.
+- **Options considered:** A light card layout, a dark layout, or a minimalist high-contrast layout; CSS-only changes or CSS plus small semantic/accessibility improvements. Compared hierarchy, readable contrast, visible keyboard focus, and narrow-screen usability. Reading: `docs/TASK.md` → Feature 2; WCAG guidance on contrast and focus visibility.
+- **Decision & justification:** Light cards with CSS and small accessibility improvements — “Интерфейс станет привлекательнее, что улучшит пользовательский опыт.”
+- **Concepts explained:** Existing labels and the unit fieldset already provide semantic relationships; their accessibility was preserved while adding styling scope classes.
+- **TODO:** Review the layout at desktop and narrow widths and check keyboard focus in the browser.
+- **Validation:** `pnpm format`, `pnpm lint`, the App tests (9 passed), and a Vite build to a temporary output directory passed.
+
+## 2026-11-26 — Choosing a blue accent
+
+- **Did:** Applied the selected blue accent to primary controls and focus indicators; white-on-blue contrast measures 6.70:1.
+- **Options considered:** Blue, teal, or a warm amber/terracotta accent. Compared the weather-related visual tone, legibility beside numeric data, and contrast with text and status colors. Reading: WCAG guidance on contrast minimum.
+- **Decision & justification:** Blue — “Синий цвет естественно ассоциируется с погодной тематикой, не перегружает экран при работе с цифрами и статусами, а контраст обеспечим за счёт тёмного текста на светло-голубых карточках и насыщенных тёмно-синих акцентов с соотношением не ниже 4.5:1 по WCAG.”
+- **Concepts explained:** WCAG contrast ratio is a measurable threshold; status meaning must not rely on color alone.
+- **TODO:** Review whether the blue accent and card emphasis feel right while using the dashboard.
